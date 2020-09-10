@@ -2,14 +2,13 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
-from flask import Flask, request, jsonify, url_for, json
-import json
+from flask import Flask, request, jsonify, url_for
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from datastructures import FamilyStructure
 #from models import Person
 
-app = Flask(__name__)
+app = Flask(_name_)
 app.url_map.strict_slashes = False
 CORS(app)
 
@@ -26,37 +25,53 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/members', methods=['GET'])
-def handle_hello():
+@app.route('/members', methods=['GET', 'POST', 'DELETE', 'PUT'])
+@app.route('/members/<int:member_id>', methods=['GET', 'POST', 'DELETE', 'PUT'])
+def members(member_id=None):
 
+    if request.method == "GET":
+        if member_id is None:
+            return jsonify(jackson_family.get_all_members()), 200
+
+        else:
+            jack = jackson_family.get_member(member_id)
+            if not jack:
+                return jsonify({"msg":"this ID not exist"}), 400
+            return jsonify(jack), 200
+
+
+    elif request.method == "POST":
+        idd = jackson_family._generateId()
+        name = request.json.get("name", "")
+        if not name:
+            return jsonify({"msg": "name is required"}), 400
+        new_member = {
+            "id": idd,
+            "first_name": name,
+            "last_name": "Jackson"
+        }
+        add = jackson_family.add_member(new_member)
+        return jsonify(jackson_family.get_all_members()), 200
+
+
+    elif request.method == "DELETE":
+        jack = jackson_family.delete_member(member_id)
+        if not jack:
+            return jsonify({"msg":"this ID not exist"}), 400
+        return jsonify(jackson_family.get_all_members()), 200
+    
+
+@app.route("/example", methods=["GET","POST"])
+def example():
     # this is how you can use the Family datastructure by calling its methods
     members = jackson_family.get_all_members()
     response_body = {
-        "hello": "worlding",
+        "hello": "world",
         "family": members
     }
     return jsonify(members), 200
 
-@app.route('/members', methods=['POST'])
-def  add_members():
-
-    members = jackson_family.get_all_members()
-    request_body = request.data
-    decoded_object = json.loads(request_body)
-    jackson_family.append(decoded_object)
-    up= jsonify(jackson_family)
-    print(request_body, decoded_object)
-    return up
-
-@app.route('/members/<int:id>', methods=['DELETE'])
-def delete_todo(id):
-
-    id_del = jackson_family.pop(id)
-    up= jsonify(jackson_family)
-    print("This is the position to delete: ",id)
-    return up
-
 # this only runs if `$ python src/app.py` is executed
-if __name__ == '__main__':
+if _name_ == '_main_':
     PORT = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=PORT, debug=True)
